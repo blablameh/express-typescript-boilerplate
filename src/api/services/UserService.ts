@@ -1,11 +1,12 @@
 import { Service } from 'typedi';
 import { OrmRepository } from 'typeorm-typedi-extensions';
-import { UserRepository } from '../repositories/UserRepository';
-import { User } from '../models/User';
-import { events } from '../subscribers/events';
+import uuid from 'uuid';
+
 import { EventDispatcher, EventDispatcherInterface } from '../../decorators/EventDispatcher';
 import { Logger, LoggerInterface } from '../../decorators/Logger';
-
+import { User } from '../models/User';
+import { UserRepository } from '../repositories/UserRepository';
+import { events } from '../subscribers/events';
 
 @Service()
 export class UserService {
@@ -22,12 +23,13 @@ export class UserService {
     }
 
     public findOne(id: string): Promise<User | undefined> {
-        this.log.info('Find all users');
+        this.log.info('Find one user');
         return this.userRepository.findOne({ id });
     }
 
     public async create(user: User): Promise<User> {
         this.log.info('Create a new user => ', user.toString());
+        user.id = uuid.v1();
         const newUser = await this.userRepository.save(user);
         this.eventDispatcher.dispatch(events.user.created, newUser);
         return newUser;
@@ -39,9 +41,10 @@ export class UserService {
         return this.userRepository.save(user);
     }
 
-    public delete(id: string): Promise<void> {
+    public async delete(id: string): Promise<void> {
         this.log.info('Delete a user');
-        return this.userRepository.removeById(id);
+        await this.userRepository.delete(id);
+        return;
     }
 
 }

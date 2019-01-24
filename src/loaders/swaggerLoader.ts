@@ -1,9 +1,9 @@
+import basicAuth from 'express-basic-auth';
+import { MicroframeworkLoader, MicroframeworkSettings } from 'microframework-w3tec';
 import * as path from 'path';
 import * as swaggerUi from 'swagger-ui-express';
-import * as basicAuth from 'express-basic-auth';
-import { MicroframeworkSettings, MicroframeworkLoader } from 'microframework-w3tec';
-import { env } from '../core/env';
 
+import { env } from '../env';
 
 export const swaggerLoader: MicroframeworkLoader = (settings: MicroframeworkSettings | undefined) => {
     if (settings && env.swagger.enabled) {
@@ -16,8 +16,12 @@ export const swaggerLoader: MicroframeworkLoader = (settings: MicroframeworkSett
             description: env.app.description,
             version: env.app.version,
         };
-        swaggerFile.host = env.app.route;
-        swaggerFile.basePath = env.app.routePrefix;
+
+        swaggerFile.servers = [
+            {
+                url: `${env.app.schema}://${env.app.host}:${env.app.port}${env.app.routePrefix}`,
+            },
+        ];
 
         expressApp.use(
             env.swagger.route,
