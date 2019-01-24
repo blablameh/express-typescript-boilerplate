@@ -14,13 +14,14 @@ yarn-error.log
 # OS generated files #
 .DS_Store
 Thumbs.db
+.tmp/
+src/api/schema.gql
 
 # Typing #
 typings/
 
 # Dist #
 dist/
-ormconfig.json
 tsconfig.build.json
 
 # IDE #
@@ -31,6 +32,7 @@ tsconfig.build.json
 # Generated source-code #
 src/**/*.js
 src/**/*.js.map
+!src/public/**/*
 test/**/*.js
 test/**/*.js.map
 coverage/

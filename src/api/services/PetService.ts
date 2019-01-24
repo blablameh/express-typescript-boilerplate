@@ -1,12 +1,13 @@
 import { Service } from 'typedi';
 import { OrmRepository } from 'typeorm-typedi-extensions';
-import { PetRepository } from '../repositories/PetRepository';
-import { Pet } from '../models/Pet';
-import { events } from '../subscribers/events';
+import uuid from 'uuid';
+
 import { EventDispatcher, EventDispatcherInterface } from '../../decorators/EventDispatcher';
 import { Logger, LoggerInterface } from '../../decorators/Logger';
+import { Pet } from '../models/Pet';
 import { User } from '../models/User';
-
+import { PetRepository } from '../repositories/PetRepository';
+import { events } from '../subscribers/events';
 
 @Service()
 export class PetService {
@@ -38,6 +39,7 @@ export class PetService {
 
     public async create(pet: Pet): Promise<Pet> {
         this.log.info('Create a new pet => ', pet.toString());
+        pet.id = uuid.v1();
         const newPet = await this.petRepository.save(pet);
         this.eventDispatcher.dispatch(events.pet.created, newPet);
         return newPet;
@@ -49,9 +51,10 @@ export class PetService {
         return this.petRepository.save(pet);
     }
 
-    public delete(id: string): Promise<void> {
+    public async delete(id: string): Promise<void> {
         this.log.info('Delete a pet');
-        return this.petRepository.removeById(id);
+        await this.petRepository.delete(id);
+        return;
     }
 
 }

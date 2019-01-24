@@ -1,36 +1,37 @@
 import * as nock from 'nock';
-import * as request from 'supertest';
-import { CreateBruce } from './../../../src/database/seeds/CreateBruce';
-import { getFactory } from './../../../src/lib/seeds/index';
-import { Factory } from './../../../src/lib/seeds/Factory';
-import { User } from './../../../src/api/models/User';
-import { bootstrapApp, BootstrapSettings } from '../utils/bootstrap';
-import { migrateDatabase, closeDatabase } from '../../utils/database';
-import { fakeAuthenticationForUser } from '../utils/auth';
+import request from 'supertest';
+import { runSeed } from 'typeorm-seeding';
 
+import { User } from '../../../src/api/models/User';
+import { CreateBruce } from '../../../src/database/seeds/CreateBruce';
+import { closeDatabase } from '../../utils/database';
+import { BootstrapSettings } from '../utils/bootstrap';
+import { prepareServer } from '../utils/server';
 
 describe('/api/users', () => {
+
+    let bruce: User;
+    let bruceAuthorization: string;
+    let settings: BootstrapSettings;
 
     // -------------------------------------------------------------------------
     // Setup up
     // -------------------------------------------------------------------------
 
-    let settings: BootstrapSettings;
-    let factory: Factory;
-    let bruce: User;
-    let authServer: nock.Scope;
-    beforeAll(async () => settings = await bootstrapApp());
-    beforeAll(async () => migrateDatabase(settings.connection));
-    beforeAll(async () => factory = getFactory(settings.connection));
-    beforeAll(async () => bruce = await factory.runSeed<User>(CreateBruce));
-    beforeAll(async () => authServer = fakeAuthenticationForUser(bruce, true));
+    beforeAll(async () => {
+        settings = await prepareServer({ migrate: true });
+        bruce = await runSeed<User>(CreateBruce);
+        bruceAuthorization = Buffer.from(`${bruce.username}:1234`).toString('base64');
+    });
 
     // -------------------------------------------------------------------------
     // Tear down
     // -------------------------------------------------------------------------
 
-    afterAll(() => nock.cleanAll());
-    afterAll(async () => closeDatabase(settings.connection));
+    afterAll(async () => {
+        nock.cleanAll();
+        await closeDatabase(settings.connection);
+    });
 
     // -------------------------------------------------------------------------
     // Test cases
@@ -39,7 +40,7 @@ describe('/api/users', () => {
     test('GET: / should return a list of users', async (done) => {
         const response = await request(settings.app)
             .get('/api/users')
-            .set('Authorization', `Bearer 1234`)
+            .set('Authorization', `Basic ${bruceAuthorization}`)
             .expect('Content-Type', /json/)
             .expect(200);
 
@@ -50,7 +51,7 @@ describe('/api/users', () => {
     test('GET: /:id should return bruce', async (done) => {
         const response = await request(settings.app)
             .get(`/api/users/${bruce.id}`)
-            .set('Authorization', `Bearer 1234`)
+            .set('Authorization', `Basic ${bruceAuthorization}`)
             .expect('Content-Type', /json/)
             .expect(200);
 
